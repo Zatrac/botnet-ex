@@ -17,11 +17,13 @@
 // *X POINTER OF X
 
 int main() {
-    int server_socket, client_socket[30], new_socket;
+    int server_socket, client_socket[30], new_socket, authorized_socket;
     int max_clients = 30, max_sd, addrlen, sd, activity, i, valread;
     int enabled = 1, recv_length=1, con_clients=0;
     socklen_t sin_size;
     char buffer[1024]; // 1KB DATA BUFFER
+    char password[] = "password\r\n";
+    char *clientlist;
     int command; // COMMAND FROM SERVER INPUT
     int debug = 1;
     fd_set readfds;    // SET FILE DESCRIPTORS FOR FUTURE CONNECTIONS
@@ -71,7 +73,7 @@ int main() {
             sd = client_socket[i];
 
             if(sd > 0)                      // IF SOCKET DESCRIPTOR IS VALID, ADD TO FD
-                FD_SET( sd, &readfds);
+                FD_SET(sd, &readfds);
 
             if(sd > max_sd)                 // SET HIGHEST FD NUMBER TO MAX SD NUMBER
                 max_sd = sd;
@@ -132,8 +134,33 @@ int main() {
                     close(sd);
                     client_socket[i] = 0;
                 }
-                else // ECHO BACK MESSAGE
-                {
+                else if (client_socket[i] == authorized_socket) {
+                    buffer[valread] = '\0';
+                    printf("[--] Command from %s:%d > %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
+                    dump(buffer, strlen(buffer));
+
+                    // LIST ALL CLIENTS COMMAND
+                    if(strncmp(buffer, "list", strlen("list")) == 0) {
+                        for(i = 0; i < max_clients; i++) {
+                            if(client_socket[i] != authorized_socket) {
+                                getpeername(client_socket[i], (struct sockaddr*)&client_addr, (socklen_t*)&addrlen);
+                                if(client_socket[i] != 0) {
+                                    printf("[#%d] %s:%d\n", i, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                                    asprintf(&clientlist, "[#%d] %s:%d\r\n", i, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                                    send(authorized_socket, clientlist, strlen(clientlist), 0);
+                                }
+                            }
+                        }
+                    }
+
+                    // MORE COMMANDS..
+                }
+                else if(strncmp(buffer, password, valread) == 0) {   // AUTHENTICATE USER
+                    buffer[valread] = '\0';
+                    printf("[--] Authenticated %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                    authorized_socket = client_socket[i];
+                }
+                else {  // ECHO BACK MESSAGE
                     buffer[valread] = '\0';
                     printf("[--] Message from %s:%d > %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
                     send(sd, buffer, strlen(buffer), 0);

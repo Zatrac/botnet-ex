@@ -7,8 +7,8 @@ It uses file descriptors to distinguish each client with the **<sys/time.h>** li
 - [x] Echoing sent messages from clients
 - [x] Awareness of client disconnects
 - [ ] Sending commands to specific clients
-- [ ] Master account authentication
-- [ ] Retrieving a list of clients connected
+- [x] Master account authentication
+- [x] Retrieving a list of clients connected
 
 Features for the server are not final.
 

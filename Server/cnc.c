@@ -8,7 +8,6 @@
 #include <pthread.h>
 #include "fatal.h"
 #include "hexdump.h"
-#include "exec_shell.h"
 #include "banner.h"
 
 #define PORT 9090
@@ -30,7 +29,7 @@ int main() {
 
     pbanner();
 
-    char *message= "WELCOME TO THE HIVENET\n\r";
+    char *message= "\n\rWELCOME AUTHENTICATED USER\n\r";
 
     for(i = 0; i < max_clients; i++){
         client_socket[i] = 0;               // INITIALIZE ALL CLIENT SOCKETS
@@ -98,15 +97,6 @@ int main() {
 
                 con_clients++;
 
-                char *welcome;
-                asprintf(&welcome, "%c]0;%s%d%c", '\033', "Clients connected: ", con_clients , '\007');
-
-                send(new_socket, welcome, strlen(welcome), 0);
-
-            if(send(new_socket, message, strlen(message), 0) != strlen(message))
-                fatal("SERVER COULD NOT SEND GREETING MESSAGE TO NEW CLIENT\n");
-
-
             for(i = 0; i < max_clients; i++) {
                 if(client_socket[i] == 0)       // IF CLIENT SOCKET I IS CLEAR
                 {
@@ -159,6 +149,14 @@ int main() {
                     buffer[valread] = '\0';
                     printf("[--] Authenticated %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
                     authorized_socket = client_socket[i];
+
+                    char *welcome;
+                    asprintf(&welcome, "%c]0;%s%d%c", '\033', "Clients connected: ", con_clients , '\007');
+
+                    send(authorized_socket, welcome, strlen(welcome), 0);
+
+                    if(send(new_socket, message, strlen(message), 0) != strlen(message))
+                        fatal("SERVER COULD NOT SEND GREETING MESSAGE TO AUTHORIZED CLIENT\n");
                 }
                 else {  // ECHO BACK MESSAGE
                     buffer[valread] = '\0';

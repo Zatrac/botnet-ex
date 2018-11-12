@@ -14,9 +14,6 @@ int main() {
     int sockfd, n;
     struct sockaddr_in serv_addr;
 
-    char message[200], reply[200];
-
-
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
     {
 #ifdef DEBUG

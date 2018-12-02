@@ -24,21 +24,21 @@ Features for the client not final.
 
 ## Configuration
 
-Enter your server ip into the client.c file.  
-line:35  `serv_addr.sin_addr.s_addr = inet_addr("<server_ip_here>");`
+Enter your **server ip** into the client.c file.  
+`line:35  serv_addr.sin_addr.s_addr = inet_addr("<server_ip_here>");`
 
-Enter your desired login password into cnc.c.  
-line:23  `char password[] = "<password_here>\r\n";`
+Enter your desired authentication **password** into cnc.c.  
+`line:23  char password[] = "<password_here>\r\n";`
 
-Connect to your server via PuTTY and login with the before mentioned password.
+Connect to your server via [PuTTY](https://www.putty.org/) and login with the before mentioned password.
 
 ### Commands: 
  - list                          
-[lists connected clients]
- - send id_of_socket:command  
- [send a command to a client]
+ *[lists connected clients]*
+ - send *id_of_socket:command*  
+ *[send a command to a client]*
  - help                          
- [shows available commands]
+ *[shows available commands]*
 
 ## Screenshots
 ![demo](/demo.PNG)

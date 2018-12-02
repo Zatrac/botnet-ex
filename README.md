@@ -35,7 +35,7 @@ Connect to your server via PuTTY and login with the before mentioned password.
 ### Commands: 
  - list                          
 [lists connected clients]
- - send <id_of_socket>:<command>  
+ - send id_of_socket:command  
  [send a command to a client]
  - help                          
  [shows available commands]

